@@ -1,0 +1,64 @@
+language: c++
+
+branches:
+  except:
+    - automatic
+
+cache:
+  directories:
+    - download
+
+matrix:
+  include:
+    - os: linux
+      dist: bionic
+      env:
+        - _BUILD=x86
+        - _HOST=i686-w64-mingw32
+      before_install:
+        - docker pull archlinux
+      install:
+        - container=$(docker run -d -i -t -v /home:/home archlinux /bin/bash)
+        - |
+          cross() {
+            docker exec -w "$(pwd)" -e _BUILD -e _HOST -i -t "$container" "$@"
+          }
+      script:
+        - cross bash .travis/script.sh
+    - os: linux
+      dist: bionic
+      env:
+        - _BUILD=x64
+        - _HOST=x86_64-w64-mingw32
+      before_install:
+        - docker pull archlinux
+      install:
+        - container=$(docker run -d -i -t -v /home:/home archlinux /bin/bash)
+        - |
+          cross() {
+            docker exec -w "$(pwd)" -e _BUILD -e _HOST -i -t "$container" "$@"
+          }
+      script:
+        - cross bash .travis/script.sh
+
+before_deploy:
+  - |
+    if test "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false"; then
+      export TRAVIS_TAG=automatic
+      git tag -f "$TRAVIS_TAG"
+    fi
+
+deploy:
+  provider: releases
+  api_key: "$GITHUB_TOKEN"
+  file: release/*
+  file_glob: true
+  prerelease: true
+  overwrite: true
+  edge: true
+  on:
+    branch: master
+
+env:
+  global:
+    secure: "kKV70LFT+13ghnCiwruuu9CliVkdbC4WSgIpUzhcgdIyxPSNRiPOF9xz879fjGkRyb1tVgzvGG6UWLtxkSIkBITOqK2AHxiVYP2C6rddjF2uZ6xqcluNzsERLQa6J3011t6QBLzA1WDNPPOjCGB5akt9zLIXCYy/VKF6eQ13vObcHxJYkmNByLB3YQyAE+Qf4fw/uO3gtGrXYqWIRX1ZmTbfJEg8WqOaFyKyQIiKxZWmoAjyNJVZk1a8W6LdRks1AVqlA+naIST2hCXfUalYYZp3fK/I0TnQVbC7OuSgmaQzTTLdjkU6LOWO2aW6lpaNujcVycNWdudDYP2NFbEszbA2Ik1D8l70nr3dky49iPCVemYtMK8qTYk7UBMfTqGQcRzeLCUwjv//kElzACjDctlt43q8RUZyldkPSDaLtt07loFA15EeBmgh29FIxUL1hSngJ8NhqWCqYGSud4R/F4iAz+taetX3XYeeE+aGse4CQ0iFZ5fAIqwGjej615S24zFxDNzFdnXJqKm3g2mLOkrRxYKesDIUqKA1NHYCJSqETsKiG/haYmWZp8lTo7027aUThu9A7df7wf9ElFeSlkFwQK5JRzYluQVD/WFQ5CCV2E+a7u8ry3Lt/o37SqAcQo09YTpyZMkkSKXzN2M9GSbWMH6XnId0YOZuWqvdn+U="

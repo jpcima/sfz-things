@@ -14,15 +14,20 @@
 #include <cstring>
 #include <fcntl.h>
 
+std::string command_name;
+
 static void usage()
 {
+    const char *cmd = command_name.c_str();
+
     fprintf(
         stderr,
-        "Usage: sforzando <cmd> [arg]...\n"
+        "Usage: %s <cmd> [arg]...\n"
         "\n"
-        "  * sforzando render <midi-file> <sfz-file> <sound-file>\n"
-        "  * sforzando fxb-to-xml <file>\n"
-        "  * sforzando xml-to-fxb <file>\n");
+        "  * %s render <midi-file> <sfz-file> <sound-file>\n"
+        "  * %s fxb-to-xml <file>\n"
+        "  * %s xml-to-fxb <file>\n",
+        cmd, cmd, cmd, cmd);
 }
 
 static std::string getFullPath(const std::string &path)
@@ -377,6 +382,13 @@ static int xml_to_fxb(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    std::string command_program = argv[0];
+    size_t command_separator = command_program.find_last_of("/\\");
+    if (command_separator != std::string::npos)
+        command_name = command_program.substr(command_separator + 1);
+    else
+        command_name = command_program;
+
     _setmode(fileno(stdout), O_BINARY);
 
     int (*cmdfn)(int, char *[]) = nullptr;
